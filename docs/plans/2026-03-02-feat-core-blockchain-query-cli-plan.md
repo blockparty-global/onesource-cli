@@ -48,16 +48,16 @@ onesource block 20000000 | jq '.data.block.gasUsed'
 
 ## Acceptance Criteria
 
-- [ ] `onesource transaction <hash>` — fetches single transaction by hash
-- [ ] `onesource transactions` — lists transactions with filter/pagination flags
-- [ ] `onesource block <number>` — fetches single block by number (or `--hash`)
-- [ ] `onesource blocks` — lists blocks with filter/pagination flags
-- [ ] JSON output by default (standard GraphQL `{ data: { ... } }` envelope)
-- [ ] `--yaml` flag converts output to YAML
-- [ ] API key read from `ONESOURCE_API_KEY` env var (falls back to `MACH10_API_KEY`)
-- [ ] Clear error messages for missing API key, network failures, GraphQL errors
-- [ ] `onesource --help` and per-command help
-- [ ] Pipe-friendly: no color/spinners by default, clean stdout for `jq`
+- [x] `onesource transaction <hash>` — fetches single transaction by hash
+- [x] `onesource transactions` — lists transactions with filter/pagination flags
+- [x] `onesource block <number>` — fetches single block by number (or `--hash`)
+- [x] `onesource blocks` — lists blocks with filter/pagination flags
+- [x] JSON output by default (standard GraphQL `{ data: { ... } }` envelope)
+- [x] `--yaml` flag converts output to YAML
+- [x] API key read from `ONESOURCE_API_KEY` env var (falls back to `MACH10_API_KEY`)
+- [x] Clear error messages for missing API key, network failures, GraphQL errors
+- [x] `onesource --help` and per-command help
+- [x] Pipe-friendly: no color/spinners by default, clean stdout for `jq`
 
 ## MVP
 

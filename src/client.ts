@@ -1,5 +1,4 @@
-const ENDPOINT = process.env.ONESOURCE_API_ENDPOINT
-  || 'https://api-sre-dash.onesource.io/graphql';
+import { resolveEndpointUrl } from './endpoints.js';
 
 function getApiKey(): string {
   const key = process.env.ONESOURCE_API_KEY || process.env.MACH10_API_KEY;
@@ -15,7 +14,8 @@ export async function query(
   gql: string,
   variables?: Record<string, unknown>
 ): Promise<unknown> {
-  const res = await fetch(ENDPOINT, {
+  const endpoint = resolveEndpointUrl();
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

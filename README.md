@@ -1,6 +1,6 @@
 # onesource-cli
 
-CLI for querying OneSource blockchain data. Four commands, two deps, native `fetch()`.
+CLI for querying OneSource blockchain data. Supports multiple networks, five commands, two deps, native `fetch()`.
 
 ## Install
 
@@ -25,17 +25,47 @@ Set your API key as an environment variable:
 export ONESOURCE_API_KEY=your_key_here
 ```
 
-Also accepts `MACH10_API_KEY`. Optionally override the endpoint:
+Also accepts `MACH10_API_KEY`.
+
+## Endpoints
+
+The CLI supports multiple OneSource API endpoints. Switch between them with the `endpoint` command:
 
 ```bash
-export ONESOURCE_API_ENDPOINT=https://api-sre-dash.onesource.io/graphql  # default
+onesource endpoint                  # show current endpoint and list available
+onesource endpoint ethereum         # switch to Ethereum mainnet
+onesource endpoint blockticity      # switch to Blockticity (BTIC) Avalanche L1 subnet
 ```
+
+| Name | URL | Description |
+|------|-----|-------------|
+| `ethereum` | `https://api-sre-dash.onesource.io/graphql` | Ethereum mainnet (default) |
+| `blockticity` | `https://api-blockticity.onesource.io/graphql` | Blockticity (BTIC) Avalanche L1 subnet |
+
+You can also set a custom endpoint URL directly:
+
+```bash
+onesource endpoint https://custom.example.com/graphql
+```
+
+The selection persists in `~/.onesource/config.json`. The `ONESOURCE_API_ENDPOINT` environment variable takes priority over saved config if set.
 
 ## Usage
 
+### endpoint
+
+Show or set the active API endpoint.
+
+```bash
+onesource endpoint                  # show current and list all
+onesource endpoint ethereum         # switch to Ethereum
+onesource endpoint blockticity      # switch to Blockticity
+onesource endpoint --list           # same as no args
+```
+
 ### block
 
-Fetch a single block by number or hash.
+Fetch a single block by number or hash. (Ethereum endpoint)
 
 ```bash
 onesource block 20000000
@@ -45,7 +75,7 @@ onesource block 20000000 --yaml
 
 ### blocks
 
-List blocks with optional filters and pagination.
+List blocks with optional filters and pagination. (Ethereum endpoint)
 
 ```bash
 onesource blocks --first 5
@@ -66,7 +96,7 @@ Options:
 
 ### transaction
 
-Fetch a single transaction by hash.
+Fetch a single transaction by hash. (Ethereum endpoint)
 
 ```bash
 onesource transaction 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
@@ -74,7 +104,7 @@ onesource transaction 0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfb
 
 ### transactions
 
-List transactions with optional filters and pagination.
+List transactions with optional filters and pagination. (Ethereum endpoint)
 
 ```bash
 onesource transactions --first 5
@@ -97,6 +127,24 @@ Options:
 | `--order-by <field>` | BLOCK_NUMBER, TIMESTAMP, VALUE, HASH, GAS, NONCE |
 | `--order <dir>` | ASC or DESC |
 
+### nft
+
+Fetch NFT metadata by contract address and token ID. (Blockticity endpoint)
+
+```bash
+onesource endpoint blockticity
+onesource nft 0x7D1955F814f25Ec2065C01B9bFc0AcC29B3f2926 842909
+onesource nft 0x7D1955F814f25Ec2065C01B9bFc0AcC29B3f2926 862909 --yaml
+onesource nft 0x7D1955F814f25Ec2065C01B9bFc0AcC29B3f2926 842909 --network BTIC
+```
+
+Options:
+
+| Flag | Description |
+|------|-------------|
+| `--network <name>` | Network name (default: BTIC) |
+| `--yaml` | Output as YAML |
+
 ## Output
 
 JSON by default (standard GraphQL `{ data: { ... } }` envelope). Add `--yaml` to any command for YAML output.
@@ -106,6 +154,7 @@ Pipe-friendly — no colors or spinners:
 ```bash
 onesource block 20000000 | jq '.data.block.gasUsed'
 onesource transactions --first 3 | jq '.data.transactions.entries[].hash'
+onesource nft 0x7D1955F814f25Ec2065C01B9bFc0AcC29B3f2926 842909 | jq '.data.nft.metadata.attributes'
 ```
 
 ## Development

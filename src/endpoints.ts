@@ -24,7 +24,7 @@ interface Config {
 
 function readConfig(): Config {
   try {
-    return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+    return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8')) as Config;
   } catch {
     return {};
   }
@@ -38,7 +38,7 @@ function writeConfig(config: Config): void {
 export function getActiveEndpointName(): string {
   return process.env.ONESOURCE_API_ENDPOINT
     ? 'custom (env)'
-    : readConfig().endpoint ?? DEFAULT_ENDPOINT;
+    : (readConfig().endpoint ?? DEFAULT_ENDPOINT);
 }
 
 export function resolveEndpointUrl(): string {

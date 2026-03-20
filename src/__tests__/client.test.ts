@@ -156,7 +156,7 @@ describe('client', () => {
       process.env.ONESOURCE_API_KEY = 'test-key';
       vi.mocked(fetch).mockRejectedValue(new Error('Network failure'));
 
-      await expect(query('query { test }')).rejects.toThrow('Network failure');
+      await expect(query('query { test }', undefined, { retries: 0 })).rejects.toThrow('Network failure');
     });
   });
 });

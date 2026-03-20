@@ -1,6 +1,21 @@
 import { Command } from 'commander';
 import { query } from '../client.js';
 import { format } from '../output.js';
+import { ValidationError, handleError } from '../errors.js';
+import {
+  validateHash,
+  validateAddress,
+  validatePagination,
+  validateTransactionStatus,
+  validateOrderDirection,
+  validatePositiveInteger,
+} from '../validation.js';
+import type {
+  TransactionResponse,
+  TransactionsListResponse,
+  TransactionOptions,
+  TransactionsOptions,
+} from '../types.js';
 
 const GET_TRANSACTION = `
   query GetTransaction($hash: TransactionHash!) {
@@ -63,15 +78,22 @@ const GET_TRANSACTIONS = `
 export function registerTransactionCommands(program: Command) {
   program
     .command('transaction <hash>')
+    .alias('tx')
     .description('Get a single transaction by hash')
     .option('--yaml', 'Output as YAML instead of JSON')
-    .action(async (hash: string, opts: { yaml?: boolean }) => {
-      const result = await query(GET_TRANSACTION, { hash });
-      console.log(format(result, !!opts.yaml));
+    .action(async (hash: string, opts: TransactionOptions) => {
+      try {
+        validateHash(hash);
+        const result = await query<TransactionResponse['data']>(GET_TRANSACTION, { hash });
+        console.log(format(result, !!opts.yaml));
+      } catch (error) {
+        handleError(error);
+      }
     });
 
   program
     .command('transactions')
+    .alias('txs')
     .description('List transactions with optional filters')
     .option('--from <address>', 'Filter by sender address')
     .option('--to <address>', 'Filter by recipient address')
@@ -83,38 +105,55 @@ export function registerTransactionCommands(program: Command) {
     .option('--order-by <field>', 'Sort field (BLOCK_NUMBER, TIMESTAMP, VALUE, HASH, GAS, NONCE)')
     .option('--order <dir>', 'Sort direction (ASC, DESC)')
     .option('--yaml', 'Output as YAML instead of JSON')
-    .action(async (opts: {
-      from?: string;
-      to?: string;
-      blockMin?: string;
-      blockMax?: string;
-      status?: string;
-      first: string;
-      after?: string;
-      orderBy?: string;
-      order?: string;
-      yaml?: boolean;
-    }) => {
-      const variables: Record<string, unknown> = {
-        first: parseInt(opts.first, 10),
-      };
-      if (opts.after) variables.after = opts.after;
-      if (opts.orderBy) variables.orderBy = opts.orderBy;
-      if (opts.order) variables.orderDirection = opts.order;
+    .action(async (opts: TransactionsOptions & { first: string }) => {
+      try {
+        const pagination = validatePagination(opts.first, opts.after);
+        
+        // Validate addresses if provided
+        if (opts.from) validateAddress(opts.from);
+        if (opts.to) validateAddress(opts.to);
+        
+        // Validate order direction if provided
+        if (opts.order) validateOrderDirection(opts.order);
+        
+        // Validate status if provided
+        if (opts.status) validateTransactionStatus(opts.status);
 
-      const where: Record<string, unknown> = {};
-      if (opts.from) where.from = opts.from;
-      if (opts.to) where.to = opts.to;
-      if (opts.status) where.status = opts.status;
-      if (opts.blockMin || opts.blockMax) {
-        const range: Record<string, number> = {};
-        if (opts.blockMin) range.gte = parseInt(opts.blockMin, 10);
-        if (opts.blockMax) range.lte = parseInt(opts.blockMax, 10);
-        where.blockNumber = range;
+        const variables: {
+          first: number;
+          after?: string;
+          orderBy?: string;
+          orderDirection?: string;
+          where?: Record<string, string | number | { gte?: number; lte?: number }>;
+        } = {
+          first: pagination.first,
+        };
+        if (pagination.after) variables.after = pagination.after;
+        if (opts.orderBy) variables.orderBy = opts.orderBy;
+        if (opts.order) variables.orderDirection = opts.order;
+
+        const where: Record<string, string | number | { gte?: number; lte?: number }> = {};
+        if (opts.from) where.from = opts.from;
+        if (opts.to) where.to = opts.to;
+        if (opts.status) {
+          where.status = opts.status;
+        }
+        if (opts.blockMin || opts.blockMax) {
+          const range: Record<string, number> = {};
+          if (opts.blockMin) {
+            range.gte = validatePositiveInteger(opts.blockMin, 'Minimum block number');
+          }
+          if (opts.blockMax) {
+            range.lte = validatePositiveInteger(opts.blockMax, 'Maximum block number');
+          }
+          where.blockNumber = range;
+        }
+        if (Object.keys(where).length > 0) variables.where = where;
+
+        const result = await query<TransactionsListResponse['data']>(GET_TRANSACTIONS, variables);
+        console.log(format(result, !!opts.yaml));
+      } catch (error) {
+        handleError(error);
       }
-      if (Object.keys(where).length > 0) variables.where = where;
-
-      const result = await query(GET_TRANSACTIONS, variables);
-      console.log(format(result, !!opts.yaml));
     });
 }

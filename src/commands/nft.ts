@@ -2,9 +2,10 @@ import { Command } from 'commander';
 import { query } from '../client.js';
 import { format } from '../output.js';
 import { ValidationError, handleError } from '../errors.js';
-import type { NFTResponse, NFTOptions } from '../types.js';
+import { getActiveEndpointName } from '../endpoints.js';
+import type { NFTResponse, EthNFTResponse, NFTOptions } from '../types.js';
 
-const GET_NFT = `
+const GET_NFT_BLOCKTICITY = `
 query GetNFT($tokenId: String!, $contract: String!, $network: Network) {
   nft(tokenId: $tokenId, contract: $contract, network: $network) {
     name
@@ -28,11 +29,37 @@ query GetNFT($tokenId: String!, $contract: String!, $network: Network) {
 }
 `;
 
+const GET_NFT_ETHEREUM = `
+query GetNFT($tokenId: TokenId!, $contract: AddressString!) {
+  nft(tokenId: $tokenId, contract: $contract) {
+    name
+    tokenId
+    standard
+    contract {
+      address
+      name
+      symbol
+    }
+    metadata {
+      uri
+      name
+      description
+      image
+      externalUrl
+      attributes {
+        traitType
+        value
+      }
+    }
+  }
+}
+`;
+
 export function registerNftCommands(parent: Command): void {
   parent
     .command('nft <contract> <tokenId>')
     .description('Get NFT metadata by contract address and token ID')
-    .option('--network <network>', 'Network name (e.g. BTIC)', 'BTIC')
+    .option('--network <network>', 'Network name (for blockticity endpoint, e.g. BTIC)', 'BTIC')
     .option('--yaml', 'Output as YAML instead of JSON')
     .action(async (contract: string, tokenId: string, opts: NFTOptions & { network: string }) => {
       try {
@@ -43,14 +70,17 @@ export function registerNftCommands(parent: Command): void {
           throw new ValidationError('Token ID is required', 'tokenId');
         }
 
-        const variables = {
-          contract,
-          tokenId,
-          network: opts.network,
-        };
+        const endpoint = getActiveEndpointName();
 
-        const result = await query<NFTResponse['data']>(GET_NFT, variables);
-        console.log(format(result, !!opts.yaml));
+        if (endpoint === 'blockticity') {
+          const variables = { contract, tokenId, network: opts.network };
+          const result = await query<NFTResponse['data']>(GET_NFT_BLOCKTICITY, variables);
+          console.log(format(result, !!opts.yaml));
+        } else {
+          const variables = { contract, tokenId };
+          const result = await query<EthNFTResponse['data']>(GET_NFT_ETHEREUM, variables);
+          console.log(format(result, !!opts.yaml));
+        }
       } catch (error) {
         handleError(error);
       }

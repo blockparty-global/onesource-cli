@@ -6,6 +6,7 @@ interface QueryOptions {
   timeout?: number;
   retries?: number;
   retryDelay?: number;
+  endpoint?: string;
 }
 
 function getApiKey(): string {
@@ -45,7 +46,7 @@ async function executeQuery<T>(
   variables?: GraphQLQueryVariables,
   options: QueryOptions = {}
 ): Promise<GraphQLResponse<T>> {
-  const endpoint = resolveEndpointUrl();
+  const endpoint = options.endpoint ?? resolveEndpointUrl();
   const { timeout = 30000 } = options; // 30 second default timeout
   
   const res = await fetchWithTimeout(endpoint, {

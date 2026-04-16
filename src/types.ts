@@ -125,12 +125,37 @@ export interface NFT {
   tokenUri?: string;
 }
 
+// Ethereum endpoint NFT types
+export interface EthNFTMetadata {
+  uri?: string;
+  name?: string;
+  description?: string;
+  image?: string;
+  externalUrl?: string;
+  attributes?: NFTAttribute[];
+}
+
+export interface EthNFTContract {
+  address: string;
+  name?: string;
+  symbol?: string;
+}
+
+export interface EthNFT {
+  name?: string;
+  tokenId: string;
+  standard: string;
+  contract: EthNFTContract;
+  metadata?: EthNFTMetadata;
+}
+
 // API Response types
 export type BlockResponse = GraphQLResponse<{ block: Block }>;
 export type BlocksListResponse = GraphQLResponse<{ blocks: BlocksResponse }>;
 export type TransactionResponse = GraphQLResponse<{ transaction: Transaction }>;
 export type TransactionsListResponse = GraphQLResponse<{ transactions: TransactionsResponse }>;
 export type NFTResponse = GraphQLResponse<{ nft: NFT }>;
+export type EthNFTResponse = GraphQLResponse<{ nft: EthNFT }>;
 
 // Command option types
 export interface CommonOptions {
